@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treningi w 2025</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Treningi w 2025</h1>
+    <p id="endOfYear"></p>
+    <canvas id="chart" width="800" height="400"></canvas>
+
+    <script>
+
+        window.addEventListener('load', loadDefaultCSV);
+        
+        function loadDefaultCSV() {
+            fetch('2k25.csv')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    const data = parseCSV(text);
+                    const { dates, values } = processData(data);
+                    const datesPlustMonth = addMonth(dates)
+                    const regression = calculateTrend(datesPlustMonth, values);
+                    console.log(regression);
+                    const labels = createLabels(datesPlustMonth);
+                    createChart(labels, values, regression);
+                })
+                .catch(error => {
+                    console.error('Error loading default CSV file:', error);
+                    alert('Failed to load default CSV file. Please check the file location.');
+                });
+        }
+
+        function parseCSV(text) {
+            const rows = text.trim().split('\n').filter(row => row.trim() !== '');
+            return rows.map(row => row.split(','));
+        }
+
+        function processData(data) {
+            const dates = [];
+            const values = [];
+
+            data.forEach(([rawDate, value]) => {
+                if (rawDate && value) {
+                    const date = new Date(rawDate);
+                    dates.push(date);
+                    const parsedValue = parseFloat(value);
+                    values.push(isNaN(parsedValue) ? 0 : parsedValue);
+                }
+            });
+
+            return { dates, values };
+        }
+
+        function addMonth(dates) {
+            let lastDate = dates[dates.length - 1];
+
+            var toAdd = Math.max(10, dates.length * 0.3)
+            let sum = dates.length + toAdd
+            if (sum > 365) {
+                toAdd = 365 - dates.length;
+            }
+            if (toAdd == 0) {
+                return dates
+            }
+            // Dodaj kolejne dni do listy
+            for (let i = 1; i <= toAdd; i++) {
+                let nextDate = new Date(lastDate);
+                nextDate.setDate(lastDate.getDate() + i);
+                dates.push(nextDate);
+            }
+
+            return dates
+        }
+
+        function createLabels(dates) {
+            const labels = []           
+            dates.forEach((rawDate) => {
+                const date = new Date(rawDate);
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                labels.push(day.toString() + "." + month.toString());
+            })
+            console.log(labels);
+            return labels
+        }
+
+        function createChart(labels, values, regression) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Treningi',
+                            data: values,
+                            borderColor: 'blue',
+                            fill: false,
+                        },
+                        {
+                            label: 'Trend',
+                            data: regression,
+                            borderColor: 'red',
+                            borderDash: [5, 5],
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            min: 0,
+                            max: Math.max(10, regression[regression.length - 1]),
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateTrend(dates, values) {
+            const n = values.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+
+            values.forEach((value, i) => {
+                const day = daysIntoYear(dates[i]);
+                sumX += day;
+                sumY += value;
+                sumXY += day * value;
+                sumX2 += day * day;
+            });
+
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            const endOfYear = slope * 365 + intercept;
+            console.log(endOfYear);
+            document.getElementById('endOfYear').innerHTML = "Estymowana ilość treningów na koniec 2025 roku: <b>" + Math.floor(endOfYear) + "</b>";
+            return dates.map(x => slope * daysIntoYear(x) + intercept);
+        }
+
+        function daysIntoYear(date){
+            return (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
+        }
+    </script>
+</body>
+</html>
