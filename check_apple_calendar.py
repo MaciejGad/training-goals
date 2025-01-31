@@ -3,7 +3,7 @@ import json
 import os
 import csv
 import argparse
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 # Konfiguracja argumentów wiersza poleceń
 parser = argparse.ArgumentParser(description="Pobiera wydarzenia 'Trening' z kalendarza 'Home' i aktualizuje 2k25.csv.")
@@ -86,33 +86,32 @@ for event in events:
         break  # Jeśli znaleźliśmy "Trening", nie sprawdzamy kolejnych wydarzeń
 
 # Jeśli znaleziono wydarzenie "Trening", aktualizujemy plik CSV
-if training_found:
-    try:
-        # Sprawdź, czy plik istnieje i odczytaj ostatnią wartość
-        last_value = 0
-        if os.path.exists(csv_file_path):
-            with open(csv_file_path, mode="r", newline="") as file:
-                reader = csv.reader(file)
-                rows = list(reader)
 
-                if len(rows) > 0:  # Jeśli są jakieś wpisy
-                    last_row = rows[-1]  # Pobierz ostatni wiersz
-                    try:
-                        last_value = int(last_row[1])  # Pobierz wartość z drugiej kolumny
-                    except ValueError:
-                        print("⚠️ Ostrzeżenie: Niepoprawna wartość w pliku CSV. Ustawiono wartość 0.")
+try:
+    # Sprawdź, czy plik istnieje i odczytaj ostatnią wartość
+    last_value = 0
+    if os.path.exists(csv_file_path):
+        with open(csv_file_path, mode="r", newline="") as file:
+            reader = csv.reader(file)
+            rows = list(reader)
 
-        # Zwiększ wartość o 1 i zapisz nowy wpis
+            if len(rows) > 0:  # Jeśli są jakieś wpisy
+                last_row = rows[-1]  # Pobierz ostatni wiersz
+                try:
+                    last_value = int(last_row[1])  # Pobierz wartość z drugiej kolumny
+                except ValueError:
+                    print("⚠️ Ostrzeżenie: Niepoprawna wartość w pliku CSV. Ustawiono wartość 0.")
+
+    # Zwiększ wartość o 1 i zapisz nowy wpis
+    if training_found:
         new_value = last_value + 1
+    else:
+        new_value = last_value
+    with open(csv_file_path, mode="a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([today_str, new_value])
 
-        with open(csv_file_path, mode="a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([today_str, new_value])
+    print(f"✅ Zapisano trening nr {new_value} w dniu {today_str}. Zaktualizowano plik 2k25.csv")
 
-        print(f"✅ Znaleziono trening nr {new_value} w dniu {today_str}. Zaktualizowano plik 2k25.csv")
-
-    except Exception as e:
-        print(f"❌ Błąd podczas przetwarzania pliku CSV: {e}")
-
-else:
-    print("ℹ️ Nie znaleziono wydarzeń 'Trening' na dzisiaj. Plik CSV pozostaje bez zmian.")
+except Exception as e:
+    print(f"❌ Błąd podczas przetwarzania pliku CSV: {e}")
