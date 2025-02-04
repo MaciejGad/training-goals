@@ -21,7 +21,6 @@ def linear_regression(dates, trainings):
     try:
         import numpy as np
         x = np.array([(d - min(dates)).days for d in dates])
-        print(x)
         y = np.array(trainings)
         slope, intercept = calulate_linear_regression(x, y)
 
@@ -85,6 +84,5 @@ if __name__ == "__main__":
     try:
         data = read_csv(input_csv)
         generate_training_plot(data, output_png)
-        print(f"Wykres zapisano jako {output_png}")
     except (FileNotFoundError, RuntimeError) as e:
         print(e)
