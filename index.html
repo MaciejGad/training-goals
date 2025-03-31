@@ -16,7 +16,7 @@
         window.addEventListener('load', loadDefaultCSV);
         
         function loadDefaultCSV() {
-            fetch('2k25.csv')
+            fetch('2k25.csv?v=2')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok ' + response.statusText);
